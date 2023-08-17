@@ -44,6 +44,14 @@ runs:
       with:
         detached: true
 
+    - name: Load Machine User Name
+      id: load_machine_user
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        echo "MACHINE_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
+
     - name: Run terragrunt
       id: terragrunt
       if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
@@ -52,9 +60,9 @@ runs:
         TG_ENABLE_PARALLELISM_LIMIT: ${{ inputs.tg_enable_parallelism_limit }}
         GITHUB_TOKEN: ${{ inputs.token }}
         INPUT_PRE_EXEC_1: |
-          git config --global 'url.https://gruntwork-ci:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
+          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
         INPUT_PRE_EXEC_2: |
-          git config --global 'url.https://gruntwork-ci:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
+          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
       with:
         tf_version: ${{ inputs.tf_version }}
         tg_version: ${{ inputs.tg_version }}
