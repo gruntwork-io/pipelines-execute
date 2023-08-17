@@ -1,0 +1,70 @@
+name: Run Terragrunt
+description: Run Terragrunt
+inputs:
+  working_directory:
+    description: "The folder path to plan"
+    required: true
+  with_ssh_enabled:
+    description: "Run the build with tmate ssh enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
+    required: false
+  terragrunt_command:
+    description: "The terragrunt command to run"
+    required: true
+    default: "plan"
+  token:
+    description: "The GitHub token to use for the terragrunt action"
+    required: true
+  # The following are required for the terragrunt action
+  tg_version:
+    description: "Terragrunt version to install."
+    required: true
+    default: "0.48.1"
+  tf_version:
+    description: "Terraform version to install."
+    required: true
+    default: "1.0.11"
+  tg_enable_parallelism_limit:
+    description: "Enable terragrunt parallelism, false by default"
+    required: false
+    default: false
+outputs:
+  plan:
+    description: "The plan output"
+    value: ${{ steps.terragrunt.outputs.stdout }}
+
+runs:
+  using: "composite"
+  steps:
+    # Enable tmate debugging of manually-triggered workflows if the input option was provided
+    - name: Enable debugging via ssh
+      uses: mxschmitt/action-tmate@v3
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
+      with:
+        detached: true
+
+    - name: Load Machine User Name
+      id: load_machine_user
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        echo "MACHINE_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
+
+    - name: Run terragrunt
+      id: terragrunt
+      if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
+      uses: gruntwork-io/terragrunt-action@v1.0.7
+      env:
+        TG_ENABLE_PARALLELISM_LIMIT: ${{ inputs.tg_enable_parallelism_limit }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        INPUT_PRE_EXEC_1: |
+          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
+        INPUT_PRE_EXEC_2: |
+          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
+      with:
+        tf_version: ${{ inputs.tf_version }}
+        tg_version: ${{ inputs.tg_version }}
+        tg_dir: ${{ inputs.working_directory }}
+        tg_command: "${{ inputs.terragrunt_command }}"
