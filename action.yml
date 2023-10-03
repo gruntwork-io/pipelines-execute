@@ -1,5 +1,5 @@
-name: Run Terragrunt
-description: Run Terragrunt
+name: Pipelines Execute
+description: Run Pipelines Execute
 inputs:
   working_directory:
     description: "The folder path to plan"
@@ -12,7 +12,7 @@ inputs:
     required: true
     default: "plan"
   token:
-    description: "The GitHub token to use for the terragrunt action"
+    description: "The GitHub token for downloading the Pipelines binary"
     required: true
   # The following are required for the terragrunt action
   tg_version:
@@ -27,13 +27,18 @@ inputs:
     description: "Enable terragrunt parallelism, false by default"
     required: false
     default: false
+  pipelines_cli_version:
+    description: "The version of the Gruntwork Pipelines CLI to use"
+    required: false
+    default: v0.1.5
 outputs:
-  plan:
-    description: "The plan output"
-    value: ${{ steps.terragrunt.outputs.stdout }}
+  pipelines-execute:
+    description: "The Pipelines Execute action output"
+    value: ${{ steps.execute.outputs.stdout }}
 
 runs:
   using: "composite"
+  if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
   steps:
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Enable debugging via ssh
@@ -44,27 +49,81 @@ runs:
       with:
         detached: true
 
-    - name: Load Machine User Name
-      id: load_machine_user
+    - name: Check Pipelines Execute can run
+      if: ${{ startsWith(inputs.working_directory, '_new-account-request') }}
+      run: |
+        echo "Pipelines Execute command is not permitted in the account-request directory."
+        exit 1
+
+    - name: Install Terraform and Terragrunt
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        TF_ENV_VERSION: v3.0.0
+        TG_SWITCH_VERSION: 0.6.0
+      run: |
+        # Install tfenv
+        git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
+
+        # Install tgswitch
+        mkdir -p "${HOME}/tgswitch"
+        wget -q https://github.com/warrensbox/tgswitch/releases/download/${TG_SWITCH_VERSION}/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -O /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
+        tar -xzf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -C ${HOME}/tgswitch
+        chmod u+x ${HOME}/tgswitch/tgswitch
+        rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
+
+        # Add tfenv and tgswitch to PATH variable
+        export PATH=$PATH:$HOME/.tfenv/bin:$HOME/tgswitch
+
+        # Install Terraform and Terragrunt
+        tfenv install ${{ inputs.tf_version }}
+        tfenv use ${{ inputs.tf_version }}
+        tgswitch ${{ inputs.tg_version }}
+
+    - name: Download Pipelines CLI
+      uses: dsaltares/fetch-gh-release-asset@1.1.1
+      with:
+        repo: "gruntwork-io/pipelines-cli"
+        version: "tags/${{ inputs.pipelines_cli_version }}"
+        file: "pipelines_linux_amd64"
+        target: "/tmp/pipelines"
+        token: ${{ inputs.token }}
+
+    - name: Install Pipelines CLI
       shell: bash
       run: |
-        echo "MACHINE_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
+        sudo mv /tmp/pipelines /usr/local/bin/pipelines
+        sudo chmod +x /usr/local/bin/pipelines
 
-    - name: Run terragrunt
-      id: terragrunt
-      if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
-      uses: gruntwork-io/terragrunt-action@v1.0.7
-      env:
-        TG_ENABLE_PARALLELISM_LIMIT: ${{ inputs.tg_enable_parallelism_limit }}
-        GITHUB_TOKEN: ${{ inputs.token }}
-        INPUT_PRE_EXEC_1: |
-          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
-        INPUT_PRE_EXEC_2: |
-          git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
-      with:
-        tf_version: ${{ inputs.tf_version }}
-        tg_version: ${{ inputs.tg_version }}
-        tg_dir: ${{ inputs.working_directory }}
-        tg_command: "${{ inputs.terragrunt_command }}"
+    - name: Run Pipelines Execute
+      id: execute
+      shell: bash
+      run: |
+        JOBS=$(pipelines execute \
+                --terragrunt-command ${{ inputs.terragrunt_command }} \
+                --terragrunt-enable-parallelism-limit ${{ inputs.tg_enable_parallelism_limit }} )
+        echo $JOBS
+        echo "jobs=$(echo $JOBS)" >> $GITHUB_OUTPUT
+
+    # - name: Load Machine User Name
+    #   id: load_machine_user
+    #   env:
+    #     GH_TOKEN: ${{ inputs.token }}
+    #   shell: bash
+    #   run: |
+    #     echo "MACHINE_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
+
+    # - name: Run terragrunt
+    #   id: terragrunt
+    #   if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
+    #   uses: gruntwork-io/terragrunt-action@v1.0.7
+    #   env:
+    #     TG_ENABLE_PARALLELISM_LIMIT: ${{ inputs.tg_enable_parallelism_limit }}
+    #     GITHUB_TOKEN: ${{ inputs.token }}
+    #     INPUT_PRE_EXEC_1: |
+    #       git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
+    #     INPUT_PRE_EXEC_2: |
+    #       git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
+    #   with:
+    #     tf_version: ${{ inputs.tf_version }}
+    #     tg_version: ${{ inputs.tg_version }}
+    #     tg_dir: ${{ inputs.working_directory }}
+    #     tg_command: "${{ inputs.terragrunt_command }}"
