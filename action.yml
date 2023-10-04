@@ -90,4 +90,4 @@ runs:
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command ${{ inputs.terragrunt_command }} \
-          --tg-execution-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }}
+          --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }}
