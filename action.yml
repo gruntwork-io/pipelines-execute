@@ -86,7 +86,7 @@ runs:
       id: execute
       shell: bash
       run: |
-        pipelines execute \
+        pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
-          --terragrunt-command ${{ inputs.terragrunt_command }} \
+          --command ${{ inputs.terragrunt_command }} \
           --tg-execution-parallelism-limit ${{ inputs.tg_enable_parallelism_limit }}
