@@ -45,6 +45,7 @@ runs:
         detached: true
 
     - name: Install Terraform and Terragrunt
+      shell: bash
       env:
         TF_ENV_VERSION: v3.0.0
         TG_SWITCH_VERSION: 0.6.0
