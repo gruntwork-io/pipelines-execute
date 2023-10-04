@@ -2,7 +2,7 @@ name: Pipelines Execute
 description: Run Pipelines Execute
 inputs:
   working_directory:
-    description: "The folder path to plan"
+    description: "The folder path to run Pipelines Execute in"
     required: true
   with_ssh_enabled:
     description: "Run the build with tmate ssh enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
@@ -30,15 +30,10 @@ inputs:
   pipelines_cli_version:
     description: "The version of the Gruntwork Pipelines CLI to use"
     required: false
-    default: v0.1.5
-outputs:
-  pipelines-execute:
-    description: "The Pipelines Execute action output"
-    value: ${{ steps.execute.outputs.stdout }}
+    default: v0.2.0-alpha
 
 runs:
   using: "composite"
-  if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
   steps:
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Enable debugging via ssh
@@ -97,33 +92,7 @@ runs:
       id: execute
       shell: bash
       run: |
-        JOBS=$(pipelines execute \
-                --terragrunt-command ${{ inputs.terragrunt_command }} \
-                --terragrunt-enable-parallelism-limit ${{ inputs.tg_enable_parallelism_limit }} )
-        echo $JOBS
-        echo "jobs=$(echo $JOBS)" >> $GITHUB_OUTPUT
-
-    # - name: Load Machine User Name
-    #   id: load_machine_user
-    #   env:
-    #     GH_TOKEN: ${{ inputs.token }}
-    #   shell: bash
-    #   run: |
-    #     echo "MACHINE_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
-
-    # - name: Run terragrunt
-    #   id: terragrunt
-    #   if: ${{ !startsWith(inputs.working_directory, '_new-account-request') }}
-    #   uses: gruntwork-io/terragrunt-action@v1.0.7
-    #   env:
-    #     TG_ENABLE_PARALLELISM_LIMIT: ${{ inputs.tg_enable_parallelism_limit }}
-    #     GITHUB_TOKEN: ${{ inputs.token }}
-    #     INPUT_PRE_EXEC_1: |
-    #       git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com.insteadOf' 'ssh://git@github.com'
-    #     INPUT_PRE_EXEC_2: |
-    #       git config --global 'url.https://${{ steps.load_machine_user.outputs.MACHINE_NAME }}:${{ inputs.token }}@github.com/.insteadOf' 'git@github.com:'
-    #   with:
-    #     tf_version: ${{ inputs.tf_version }}
-    #     tg_version: ${{ inputs.tg_version }}
-    #     tg_dir: ${{ inputs.working_directory }}
-    #     tg_command: "${{ inputs.terragrunt_command }}"
+        pipelines execute \
+          --working-directory ${{ inputs.working_directory }} \
+          --terragrunt-command ${{ inputs.terragrunt_command }} \
+          --tg-execution-parallelism-limit ${{ inputs.tg_enable_parallelism_limit }}
