@@ -24,6 +24,7 @@ inputs:
     required: true
     default: "1.0.11"
   tg-execution-parallelism-limit:
+    # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
     required: false
   pipelines_cli_version:
