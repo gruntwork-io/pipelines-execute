@@ -23,10 +23,9 @@ inputs:
     description: "Terraform version to install."
     required: true
     default: "1.0.11"
-  tg_enable_parallelism_limit:
-    description: "Enable terragrunt parallelism, false by default"
+  tg-execution-parallelism-limit:
+    description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
     required: false
-    default: false
   pipelines_cli_version:
     description: "The version of the Gruntwork Pipelines CLI to use"
     required: false
@@ -43,12 +42,6 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
       with:
         detached: true
-
-    - name: Check Pipelines Execute can run
-      if: ${{ startsWith(inputs.working_directory, '_new-account-request') }}
-      run: |
-        echo "Pipelines Execute command is not permitted in the account-request directory."
-        exit 1
 
     - name: Install Terraform and Terragrunt
       env:
