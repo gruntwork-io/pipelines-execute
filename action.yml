@@ -12,7 +12,7 @@ inputs:
     required: true
     default: "plan"
   token:
-    description: "The GitHub token for downloading the Pipelines binary"
+    description: "The GitHub token for downloading the Gruntwork Pipelines binary and modules"
     required: true
   # The following are required for the terragrunt action
   tg_version:
@@ -31,7 +31,7 @@ inputs:
   pipelines_cli_version:
     description: "The version of the Gruntwork Pipelines CLI to use"
     required: false
-    default: v0.2.0-alpha
+    default: v0.2.1-alpha
 
 runs:
   using: "composite"
@@ -84,9 +84,20 @@ runs:
         sudo mv /tmp/pipelines /usr/local/bin/pipelines
         sudo chmod +x /usr/local/bin/pipelines
 
+    - name: Load Machine User Name
+      id: load_machine_user
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      shell: bash
+      run: |
+        echo "MACHINE_USER_NAME=$(gh api /user | jq .login)" >> "$GITHUB_OUTPUT"
+
     - name: Run Pipelines Execute
       id: execute
       shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_NAME }}
       run: |
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
