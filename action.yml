@@ -117,5 +117,5 @@ runs:
           --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }} \
           --infra-live-repo ${{ inputs.infra_live_repo }} \
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
-          --gruntwork-config ${{ inputs.gruntwork_config }} \
-          --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }}
+          --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }} \
+          --gruntwork-config ${{ inputs.gruntwork_config }}
