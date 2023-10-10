@@ -107,7 +107,10 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
+        MY_VAR: ${{ env.DEPLOY_BRANCH_NAME }}
       run: |
+        echo "Deploy branch name $DEPLOY_BRANCH_NAME"
+        echo "Deploy branch name $MY_VAR"
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command ${{ inputs.terragrunt_command }} \
@@ -115,4 +118,4 @@ runs:
           --infra-live-repo ${{ inputs.infra_live_repo }} \
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --gruntwork-config ${{ inputs.gruntwork_config }} \
-          --deployment-branch $DEPLOY_BRANCH_NAME
+          --deployment-branch "$DEPLOY_BRANCH_NAME"
