@@ -113,7 +113,7 @@ runs:
         echo "Deploy branch name $MY_VAR"
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
-          --command ${{ inputs.terragrunt_command }} \
+          --command "${{ inputs.terragrunt_command }}" \
           --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }} \
           --infra-live-repo ${{ inputs.infra_live_repo }} \
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
