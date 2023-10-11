@@ -31,7 +31,7 @@ inputs:
   pipelines_cli_version:
     description: "The version of the Gruntwork Pipelines CLI to use"
     required: false
-    default: v0.2.6-alpha
+    default: v0.2.7-alpha
   infra_live_repo:
     description: "The name of the infrastructure-live repo to execute in"
     required: true
