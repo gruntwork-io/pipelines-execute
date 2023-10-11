@@ -47,6 +47,7 @@ runs:
   steps:
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Enable debugging via ssh
+      run-name: "Enable SSH debugging"
       uses: mxschmitt/action-tmate@v3
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -109,6 +110,7 @@ runs:
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
       run: |
         cd infrastructure-live
+        git log oneline
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
