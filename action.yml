@@ -108,6 +108,7 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
       run: |
+        # CD WKDIR && RUN PIPELINES EXECUTE
         cd infrastructure-live
         git log oneline
         pipelines execute terragrunt \
