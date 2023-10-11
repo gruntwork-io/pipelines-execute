@@ -111,6 +111,7 @@ runs:
         # CD WKDIR && RUN PIPELINES EXECUTE
         cd infrastructure-live
         git --no-pager log --oneline --decorate
+        git --no-pager branch
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
