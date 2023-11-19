@@ -52,10 +52,11 @@ runs:
       run: |
         # Check if tfenv is installed, if not, install it
         echo "SHELL: $SHELL"
+        echo "checking tfenv version"
         CURRENT_TFENV_VERSION=$(tfenv -v >/dev/null 2>&1 && tfenv -v | awk '{print $NF}')
         echo "tfenv version: $CURRENT_TFENV_VERSION"
 
-        if ! [ -n "$CURRENT_TFENV_VERSION"]; then
+        if [ -z "$CURRENT_TFENV_VERSION" ]; then
           echo "Installing tfenv"
           git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
         fi
