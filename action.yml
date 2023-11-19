@@ -52,7 +52,7 @@ runs:
       run: |
         # Check if tfenv is installed, if not, install it
         if ! command -v tfenv &> /dev/null; then
-          tfenv --version
+          which tfenv
           echo "Installing tfenv"
           git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
         fi
