@@ -4,9 +4,6 @@ inputs:
   working_directory:
     description: "The folder path to run Pipelines Execute in"
     required: true
-  with_ssh_enabled:
-    description: "Run the build with tmate ssh enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
-    required: false
   terragrunt_command:
     description: "The terragrunt command to run"
     required: true
@@ -47,30 +44,25 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    - name: Enable debugging via ssh
-      uses: mxschmitt/action-tmate@v3
-      env:
-        GH_TOKEN: ${{ inputs.token }}
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
-      with:
-        detached: true
-
     - name: Install Terraform and Terragrunt
       shell: bash
       env:
         TF_ENV_VERSION: v3.0.0
         TG_SWITCH_VERSION: 0.6.0
       run: |
-        # Install tfenv
-        git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
+        # Check if tfenv is installed, if not, install it
+        if ! command -v tfenv &> /dev/null; then
+          git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
+        fi
 
-        # Install tgswitch
-        mkdir -p "${HOME}/tgswitch"
-        wget -q https://github.com/warrensbox/tgswitch/releases/download/${TG_SWITCH_VERSION}/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -O /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
-        tar -xzf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -C ${HOME}/tgswitch
-        chmod u+x ${HOME}/tgswitch/tgswitch
-        rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
+        # Check if tgswitch is installed, if not, install it
+        if ! command -v tgswitch &> /dev/null; then
+          mkdir -p "${HOME}/tgswitch"
+          wget -q https://github.com/warrensbox/tgswitch/releases/download/${TG_SWITCH_VERSION}/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -O /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
+          tar -xzf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -C ${HOME}/tgswitch
+          chmod u+x ${HOME}/tgswitch/tgswitch
+          rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
+        fi
 
         # Add tfenv and tgswitch to PATH variable
         export PATH=$PATH:$HOME/.tfenv/bin:$HOME/tgswitch
@@ -111,6 +103,8 @@ runs:
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
       run: |
         # CD Infra-live directory && Run Pipelines-execute
+
+        dir_before_execute=$(pwd) # Save current working directory to return to later
         cd ${{ inputs.infra_live_directory }}
 
         pipelines execute terragrunt \
@@ -121,3 +115,9 @@ runs:
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}"
+
+        exit_code=$?
+
+        cd $dir_before_execute # Return to original working directory
+
+        exit $exit_code
