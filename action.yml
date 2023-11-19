@@ -52,8 +52,10 @@ runs:
       run: |
         # Check if tfenv is installed, if not, install it
         echo "SHELL: $SHELL"
+        echo "awk: $(which awk)"
         echo "checking tfenv version"
         CURRENT_TFENV_VERSION=$(tfenv -v >/dev/null 2>&1 && tfenv -v | awk '{print $NF}')
+        echo "completed checking tfenv version"
         echo "tfenv version: $CURRENT_TFENV_VERSION"
 
         if [ -z "$CURRENT_TFENV_VERSION" ]; then
