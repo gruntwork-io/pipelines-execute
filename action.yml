@@ -51,9 +51,10 @@ runs:
         TG_SWITCH_VERSION: 0.6.0
       run: |
         # Check if tfenv is installed, if not, install it
-        if ! command -v tfenv &> /dev/null; then
-          tfenv_version= $(tfenv -v)
-          echo "tfenv version: $tfenv_version"
+        CURRENT_TFENV_VERSION=$(tfenv -v >/dev/null 2>&1 && tfenv -v | awk '{print $NF}')
+        echo "tfenv version: $CURRENT_TFENV_VERSION"
+
+        if ! [ -n "$CURRENT_TFENV_VERSION"]; then
           echo "Installing tfenv"
           git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
         fi
