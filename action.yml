@@ -62,6 +62,8 @@ runs:
         TF_ENV_VERSION: v3.0.0
         TG_SWITCH_VERSION: 0.6.0
       run: |
+        rm -rf ~/.tfenv
+        rm -rf "${HOME}/tgswitch"
         # Install tfenv
         git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
 
