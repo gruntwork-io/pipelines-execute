@@ -27,7 +27,7 @@ inputs:
     # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
     required: false
-    default: 0 # Ignored by pipelines-execute
+    default: "0" # Ignored by pipelines-execute
   pipelines_cli_version:
     description: "The version of the Gruntwork Pipelines CLI to use"
     required: true
@@ -43,6 +43,10 @@ inputs:
   gruntwork_config:
     description: "Contents of the Gruntwork config file"
     required: true
+  update_path_in_bash_profile:
+    description: "Whether to update the PATH variable within the bash profile to utilize the installed Terraform and Terragrunt versions"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -75,12 +79,18 @@ runs:
         rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
 
         # Add tfenv and tgswitch to PATH variable
-        export PATH=$PATH:$HOME/.tfenv/bin:$HOME/tgswitch
+        export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"
 
         # Install Terraform and Terragrunt
         tfenv install ${{ inputs.tf_version }}
         tfenv use ${{ inputs.tf_version }}
         tgswitch ${{ inputs.tg_version }}
+
+    - name: Update PATH in bash profile
+      shell: bash
+      if: ${{ inputs.update_path_in_bash_profile }}
+      run: |
+        echo 'export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"' >> "$HOME/.bash_profile"
 
     - name: Download Pipelines CLI
       uses: dsaltares/fetch-gh-release-asset@1.1.1
