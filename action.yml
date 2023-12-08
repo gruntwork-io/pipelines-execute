@@ -86,6 +86,10 @@ runs:
         tfenv use ${{ inputs.tf_version }}
         tgswitch ${{ inputs.tg_version }}
 
+        # Log versions
+        terraform --version
+        terragrunt --version
+
     - name: Update PATH in bash profile
       shell: bash
       if: ${{ inputs.update_path_in_bash_profile }}
