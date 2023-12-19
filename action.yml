@@ -129,6 +129,8 @@ runs:
         # CD Infra-live directory && Run Pipelines-execute
         cd ${{ inputs.infra_live_directory }}
 
+        export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"
+
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
