@@ -78,15 +78,24 @@ runs:
         chmod u+x ${HOME}/tgswitch/tgswitch
         rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
 
-        # Add tfenv and tgswitch to PATH variable
-        export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"
+        # Updating PATH for future steps
+        echo "$HOME/.tfenv/bin" >> "$GITHUB_PATH"
+        echo "$HOME/tgswitch" >> "$GITHUB_PATH"
 
+    - name: Install Terraform and Terragrunt Versions
+      shell: bash
+      env:
+        TF_VERSION: ${{ inputs.tf_version }}
+        TG_VERSION: ${{ inputs.tg_version }}
+      run: |
         # Install Terraform and Terragrunt
-        tfenv install ${{ inputs.tf_version }}
-        tfenv use ${{ inputs.tf_version }}
-        tgswitch ${{ inputs.tg_version }}
+        tfenv install "$TF_VERSION"
+        tfenv use "$TF_VERSION"
+        tgswitch "$TG_VERSION"
 
-        # Log versions
+    - name: Test Terraform and Terragrunt
+      shell: bash
+      run: |
         terraform --version
         terragrunt --version
 
