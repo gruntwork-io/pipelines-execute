@@ -76,8 +76,8 @@ runs:
       run: |
         TOML=$(cat <<-END
         [tools]
-        $TF_BINARY = $TF_VERSION
-        terragrunt = $TG_VERSION
+        $TF_BINARY = "$TF_VERSION"
+        terragrunt = "$TG_VERSION"
         END
         )
         echo $TOML
