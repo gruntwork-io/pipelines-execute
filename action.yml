@@ -84,7 +84,7 @@ runs:
       with:
           install: true # [default: true] run `mise install`
           cache: true # [default: true] cache mise using GitHub's cache
-          mise_toml: ${{ steps.setup-mise-toml.outputs.TOML }}
+          mise_toml: $TOML
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
