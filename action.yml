@@ -75,9 +75,9 @@ runs:
         TF_BINARY: ${{ inputs.tf_binary }}
       run: |
         TOML=$(cat <<-END
-        [tools]
-        $TF_BINARY = "$TF_VERSION"
-        terragrunt = "$TG_VERSION"
+        [tools]\n
+        $TF_BINARY = "$TF_VERSION"\n
+        terragrunt = "$TG_VERSION"\n
         END
         )
         echo $TOML
