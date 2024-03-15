@@ -125,7 +125,8 @@ runs:
         # CD Infra-live directory && Run Pipelines-execute
         cd ${{ inputs.infra_live_directory }}
 
-        if [[ "${{ inputs.tf_binary }}" == 'opentofu' ]] then
+        if [ "${{ inputs.tf_binary }}" == "opentofu" ]
+        then
           export TERRAGRUNT_TFPATH=tofu
         fi
         pipelines execute terragrunt \
