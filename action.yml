@@ -67,6 +67,7 @@ runs:
       with:
         detached: true
     - name: Setup Mise Toml
+      shell: bash
       env:
         TF_VERSION: ${{ inputs.tf_version }}
         TG_VERSION: ${{ inputs.tg_version }}
@@ -82,7 +83,7 @@ runs:
           version: 2023.12.0 # [default: latest] mise version to install
           install: true # [default: true] run `mise install`
           cache: true # [default: true] cache mise using GitHub's cache
-          mise_toml: "${{ steps.setup-mise-toml.outputs.TOML }}"
+          mise_toml: ${{ steps.setup-mise-toml.outputs.TOML }}
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
