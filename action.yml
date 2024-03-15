@@ -73,12 +73,12 @@ runs:
         TG_VERSION: ${{ inputs.tg_version }}
         TF_BINARY: ${{ inputs.tf_binary }}
       run: |
-          TOML=$(cat <<-END
-   [tools]
-    $TF_BINARY: $TF_VERSION
-    terragrunt: $TG_VERSION
-END
-)
+        TOML=$(cat <<-END
+        [tools]
+          $TF_BINARY: $TF_VERSION
+          terragrunt: $TG_VERSION
+        END
+        )
         echo $TOML
     - uses: jdx/mise-action@v2
       with:
