@@ -81,7 +81,7 @@ runs:
         END
         )
         echo $TOML
-        echo "TOML=$TOML" >> "$GITHUB_OUTPUT"
+        echo "TOML=\"$TOML\"" >> "$GITHUB_OUTPUT"
     - uses: jdx/mise-action@v2
       with:
           install: true # [default: true] run `mise install`
