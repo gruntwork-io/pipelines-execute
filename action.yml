@@ -93,19 +93,19 @@ runs:
           curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign_${LATEST_VERSION}_${arch}.deb"
           sudo dpkg -i cosign_${LATEST_VERSION}_amd64.deb
           curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.deb"
-          sudo dpkg -i "tenv_${LATEST_VERSION}_amd64.deb"
+          sudo dpkg -i "tenv_${TENV_VERSION}_amd64.deb"
         elif [ -f /etc/redhat-release ]; then
           # RedHat/CentOS system
           LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name | tr -d "v\", ")
           curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-${LATEST_VERSION}-1.x86_64.rpm"
           sudo rpm -ivh cosign-${LATEST_VERSION}.x86_64.rpm
            curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.rpm"
-          sudo rpm -ivh "tenv_${LATEST_VERSION}_${arch}.rpm"
+          sudo rpm -ivh "tenv_${TENV_VERSION}_${arch}.rpm"
         elif [ -f /etc/apk/repositories ]; then
           # Alpine system
           apk add cosign
           curl -O -L "https://github.com/tofuutils/tenv/releases/download/v1.2.0/tenv_${TENV_VERSION}_${arch}.apk"
-          apk add --no-cache "./tenv_${TENV_VERSION}_${arch}.apk""
+          apk add --allow-untrusted --no-cache "./tenv_${TENV_VERSION}_${arch}.apk"
         else
           echo "Unsupported operating system"
           exit 1

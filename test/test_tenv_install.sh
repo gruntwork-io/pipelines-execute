@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 raw_arch=$(uname -m)
 arch=""
 case $raw_arch in
@@ -40,7 +40,8 @@ elif [ -f /etc/apk/repositories ]; then
   # Alpine system
   apk add cosign
   curl -O -L "https://github.com/tofuutils/tenv/releases/download/v1.2.0/tenv_${TENV_VERSION}_${arch}.apk"
-  apk add --no-cache "./tenv_${TENV_VERSION}_${arch}.apk"
+  ls
+  apk add --allow-untrusted --no-cache "./tenv_${TENV_VERSION}_${arch}.apk"
 else
   echo "Unsupported operating system"
   exit 1
