@@ -42,6 +42,7 @@ jobs:
         token: ${{ secrets.GW_GITHUB_TOKEN }}
         tf_version: 1.0.11
         tg_version: 0.48.1
+        tf_binary: tofu
         working_directory: ${{ inputs.working_directory }}
         terragrunt_command: "${{ inputs.terragrunt_command }}"
         pipelines_cli_version: v0.2.0
@@ -54,6 +55,8 @@ jobs:
 ```
 
 This example workflow defines a job that runs Terragrunt with the specified parameters.
+
+Note this workflow uses `tenv` to select the terraform binary, the options for `tf_binary` are `tf` and `tofu`.  If you select `tofu` then the opentofu version `tf_version` will be installed
 
 **Note:** The provided workflow example uses the GitHub token (`${{ secrets.GITHUB_TOKEN }}`) for authentication. Ensure the token has sufficient permissions for your repository.
 ```

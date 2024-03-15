@@ -140,6 +140,7 @@ runs:
       shell: bash
       run: |
         terraform --version
+        tofu --version
         terragrunt --version
 
     - name: Update PATH in bash profile
