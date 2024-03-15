@@ -136,7 +136,7 @@ runs:
         tenv $BINARY use "$TF_VERSION"
         tgswitch "$TG_VERSION"
 
-    - name: Test Terraform and Terragrunt
+    - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
       run: |
         terraform --version
