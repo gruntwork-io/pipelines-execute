@@ -22,14 +22,14 @@ inputs:
   tf_version:
     description: "OpenTofu or Terraform version to install."
     required: true
-    default: "1.6.0"
+    default: "1.6.1"
   tf_binary:
     description: "Whether to use opentofu or terraform as the binary."
     required: true
-    default: "tofu"
+    default: "opentofu"
     options:
       - terraform
-      - tofu
+      - opentofu
   tg_execution_parallelism_limit:
     # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
@@ -66,86 +66,23 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
       with:
         detached: true
-
-    - name: Install Terraform and Terragrunt
-      shell: bash
-      env:
-        TENV_VERSION: v1.2.0
-        TG_SWITCH_VERSION: 0.6.0
-      run: |
-        rm -rf ~/.tenv
-        rm -rf "${HOME}/tgswitch"
-
-        raw_arch=$(uname -m)
-        arch=""
-        case $raw_arch in
-          i686|i386)
-            arch=i386
-            ;;
-          x86_64|amd64)
-            arch=amd64
-            ;;
-          aarch64|armv8b)
-            arch=arm64
-            ;;
-          *)
-            echo "Unknown architecture: $arch"
-            ;;
-        esac
-
-        # Install tenv
-        if [ -f /etc/apt/sources.list ]; then
-          # Ubuntu/Debian system
-          LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name | tr -d "v\", ")
-          curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign_${LATEST_VERSION}_${arch}.deb"
-          sudo dpkg -i cosign_${LATEST_VERSION}_amd64.deb
-          curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.deb"
-          sudo dpkg -i "tenv_${TENV_VERSION}_amd64.deb"
-        elif [ -f /etc/redhat-release ]; then
-          # RedHat/CentOS system
-          LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name | tr -d "v\", ")
-          curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-${LATEST_VERSION}-1.x86_64.rpm"
-          sudo rpm -ivh cosign-${LATEST_VERSION}.x86_64.rpm
-           curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.rpm"
-          sudo rpm -ivh "tenv_${TENV_VERSION}_${arch}.rpm"
-        elif [ -f /etc/apk/repositories ]; then
-          # Alpine system
-          apk add cosign
-          curl -O -L "https://github.com/tofuutils/tenv/releases/download/v1.2.0/tenv_${TENV_VERSION}_${arch}.apk"
-          apk add --allow-untrusted --no-cache "./tenv_${TENV_VERSION}_${arch}.apk"
-        else
-          echo "Unsupported operating system"
-          exit 1
-        fi
-
-
-        # Install tgswitch
-        mkdir -p "${HOME}/tgswitch"
-        wget -q https://github.com/warrensbox/tgswitch/releases/download/${TG_SWITCH_VERSION}/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -O /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
-        tar -xzf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -C ${HOME}/tgswitch
-        chmod u+x ${HOME}/tgswitch/tgswitch
-        rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
-
-        # Updating PATH for future steps
-        echo "$HOME/.tenv/bin" >> "$GITHUB_PATH"
-        echo "$HOME/tgswitch" >> "$GITHUB_PATH"
-
-    - name: Install Terraform and Terragrunt Versions
-      shell: bash
+    - name: Setup Mise Toml
       env:
         TF_VERSION: ${{ inputs.tf_version }}
         TG_VERSION: ${{ inputs.tg_version }}
         TF_BINARY: ${{ inputs.tf_binary }}
       run: |
-        # Install Terraform and Terragrunt
-        BINARY=${TF_BINARY:-"tofu"}
-        if [[ "$BINARY" == "terraform" ]]; then
-          BINARY="tf"
-        fi
+        TOML="[tools]
+          $TF_BINARY: $TF_VERSION
+          terragrunt: $TG_VERSION
+          "
 
-        tenv $BINARY install "$TF_VERSION"
-        tenv $BINARY use "$TF_VERSION"
-        tgswitch "$TG_VERSION"
+    - uses: jdx/mise-action@v2
+        with:
+          version: 2023.12.0 # [default: latest] mise version to install
+          install: true # [default: true] run `mise install`
+          cache: true # [default: true] cache mise using GitHub's cache
+          mise_toml: "${{ steps.setup-mise-toml.outputs.TOML }}"
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
@@ -153,12 +90,6 @@ runs:
         terraform --version
         tofu --version
         terragrunt --version
-
-    - name: Update PATH in bash profile
-      shell: bash
-      if: ${{ inputs.update_path_in_bash_profile }}
-      run: |
-        echo 'export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"' >> "$HOME/.bash_profile"
 
     - name: Download Pipelines CLI
       uses: dsaltares/fetch-gh-release-asset@1.1.1
