@@ -124,7 +124,7 @@ runs:
       run: |
         # CD Infra-live directory && Run Pipelines-execute
         cd ${{ inputs.infra_live_directory }}
-
+        export TERRAGRUNT_TFPATH=${{ inputs.tf_binary }}
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
@@ -133,4 +133,3 @@ runs:
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}"
-          --terragrunt-tfpath "${{ inputs.tf_binary }}"
