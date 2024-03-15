@@ -75,9 +75,9 @@ runs:
         TF_BINARY: ${{ inputs.tf_binary }}
       run: |
         TOML=$(cat <<-END
-        [tools]\n
-        $TF_BINARY = "$TF_VERSION"\n
-        terragrunt = "$TG_VERSION"\n
+        [tools]
+        $TF_BINARY = "$TF_VERSION"
+        terragrunt = "$TG_VERSION"
         END
         )
         echo $TOML
@@ -86,7 +86,7 @@ runs:
       with:
           install: true # [default: true] run `mise install`
           cache: true # [default: true] cache mise using GitHub's cache
-          mise_toml: ${{ steps.mise-toml.outputs.TOML }}
+          mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
