@@ -63,13 +63,54 @@ runs:
     - name: Install Terraform and Terragrunt
       shell: bash
       env:
-        TF_ENV_VERSION: v3.0.0
+        TENV_VERSION: v1.2.0
         TG_SWITCH_VERSION: 0.6.0
       run: |
-        rm -rf ~/.tfenv
+        rm -rf ~/.tenv
         rm -rf "${HOME}/tgswitch"
-        # Install tfenv
-        git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
+
+        raw_arch=$(uname -m)
+        arch=""
+        case $raw_arch in
+          i686|i386)
+            arch=i386
+            ;;
+          x86_64|amd64)
+            arch=amd64
+            ;;
+          aarch64|armv8b)
+            arch=arm64
+            ;;
+          *)
+            echo "Unknown architecture: $arch"
+            ;;
+        esac
+
+        # Install tenv
+        if [ -f /etc/apt/sources.list ]; then
+          # Ubuntu/Debian system
+          LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name | tr -d "v\", ")
+          curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign_${LATEST_VERSION}_${arch}.deb"
+          sudo dpkg -i cosign_${LATEST_VERSION}_amd64.deb
+          curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.deb"
+          sudo dpkg -i "tenv_${LATEST_VERSION}_amd64.deb"
+        elif [ -f /etc/redhat-release ]; then
+          # RedHat/CentOS system
+          LATEST_VERSION=$(curl https://api.github.com/repos/sigstore/cosign/releases/latest | jq -r .tag_name | tr -d "v\", ")
+          curl -O -L "https://github.com/sigstore/cosign/releases/latest/download/cosign-${LATEST_VERSION}-1.x86_64.rpm"
+          sudo rpm -ivh cosign-${LATEST_VERSION}.x86_64.rpm
+           curl -O -L "https://github.com/tofuutils/tenv/releases/latest/download/tenv_${TENV_VERSION}_${arch}.rpm"
+          sudo rpm -ivh "tenv_${LATEST_VERSION}_${arch}.rpm"
+        elif [ -f /etc/apk/repositories ]; then
+          # Alpine system
+          apk add cosign
+          curl -O -L "https://github.com/tofuutils/tenv/releases/download/v1.2.0/tenv_${TENV_VERSION}_${arch}.apk"
+          apk add --no-cache "./tenv_${TENV_VERSION}_${arch}.apk""
+        else
+          echo "Unsupported operating system"
+          exit 1
+        fi
+
 
         # Install tgswitch
         mkdir -p "${HOME}/tgswitch"
@@ -79,7 +120,7 @@ runs:
         rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
 
         # Updating PATH for future steps
-        echo "$HOME/.tfenv/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.tenv/bin" >> "$GITHUB_PATH"
         echo "$HOME/tgswitch" >> "$GITHUB_PATH"
 
     - name: Install Terraform and Terragrunt Versions
@@ -87,10 +128,12 @@ runs:
       env:
         TF_VERSION: ${{ inputs.tf_version }}
         TG_VERSION: ${{ inputs.tg_version }}
+        TF_BINARY: ${{ inputs.tf_binary }}
       run: |
         # Install Terraform and Terragrunt
-        tfenv install "$TF_VERSION"
-        tfenv use "$TF_VERSION"
+        BINARY=${TF_BINARY:-"tf"}
+        tenv $BINARY install "$TF_VERSION"
+        tenv $BINARY use "$TF_VERSION"
         tgswitch "$TG_VERSION"
 
     - name: Test Terraform and Terragrunt
