@@ -81,15 +81,15 @@ runs:
         echo 'EOF' >> "$GITHUB_OUTPUT"
     - uses: jdx/mise-action@v2
       with:
-          install: true # [default: true] run `mise install`
-          cache: true # [default: true] cache mise using GitHub's cache
+          install: true
+          cache: true
           mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
       run: |
-        terraform --version || echo
-        tofu --version || echo
+        terraform --version || true
+        tofu --version || true
         terragrunt --version
 
     - name: Download Pipelines CLI
