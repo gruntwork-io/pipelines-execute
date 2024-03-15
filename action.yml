@@ -22,11 +22,14 @@ inputs:
   tf_version:
     description: "OpenTofu or Terraform version to install."
     required: true
-    default: "1.5.7"
+    default: "1.6.0"
   tf_binary:
-    description: "Whether to use opentofu or terraform as the binary.  Values: tf or tofu"
+    description: "Whether to use opentofu or terraform as the binary."
     required: true
     default: "tofu"
+    options:
+      - terraform
+      - tofu
   tg_execution_parallelism_limit:
     # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
@@ -135,7 +138,11 @@ runs:
         TF_BINARY: ${{ inputs.tf_binary }}
       run: |
         # Install Terraform and Terragrunt
-        BINARY=${TF_BINARY:-"tf"}
+        BINARY=${TF_BINARY:-"tofu"}
+        if [[ "$BINARY" == "terraform" ]]; then
+          BINARY="tf"
+        fi
+
         tenv $BINARY install "$TF_VERSION"
         tenv $BINARY use "$TF_VERSION"
         tgswitch "$TG_VERSION"
