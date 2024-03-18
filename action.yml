@@ -20,9 +20,16 @@ inputs:
     required: true
     default: "0.48.1"
   tf_version:
-    description: "Terraform version to install."
+    description: "OpenTofu or Terraform version to install."
     required: true
-    default: "1.0.11"
+    default: "1.6.1"
+  tf_binary:
+    description: "Whether to use opentofu or terraform as the binary."
+    required: true
+    default: "opentofu"
+    options:
+      - terraform
+      - opentofu
   tg_execution_parallelism_limit:
     # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
@@ -59,51 +66,31 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
       with:
         detached: true
-
-    - name: Install Terraform and Terragrunt
-      shell: bash
-      env:
-        TF_ENV_VERSION: v3.0.0
-        TG_SWITCH_VERSION: 0.6.0
-      run: |
-        rm -rf ~/.tfenv
-        rm -rf "${HOME}/tgswitch"
-        # Install tfenv
-        git clone --depth=1 --branch ${TF_ENV_VERSION} https://github.com/tfutils/tfenv.git ~/.tfenv
-
-        # Install tgswitch
-        mkdir -p "${HOME}/tgswitch"
-        wget -q https://github.com/warrensbox/tgswitch/releases/download/${TG_SWITCH_VERSION}/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -O /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
-        tar -xzf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz -C ${HOME}/tgswitch
-        chmod u+x ${HOME}/tgswitch/tgswitch
-        rm -rf /tmp/tgswitch_${TG_SWITCH_VERSION}_linux_amd64.tar.gz
-
-        # Updating PATH for future steps
-        echo "$HOME/.tfenv/bin" >> "$GITHUB_PATH"
-        echo "$HOME/tgswitch" >> "$GITHUB_PATH"
-
-    - name: Install Terraform and Terragrunt Versions
+    - name: Setup Mise Toml
+      id: mise-toml
       shell: bash
       env:
         TF_VERSION: ${{ inputs.tf_version }}
         TG_VERSION: ${{ inputs.tg_version }}
+        TF_BINARY: ${{ inputs.tf_binary }}
       run: |
-        # Install Terraform and Terragrunt
-        tfenv install "$TF_VERSION"
-        tfenv use "$TF_VERSION"
-        tgswitch "$TG_VERSION"
+        echo 'TOML<<EOF' >> "$GITHUB_OUTPUT"
+        echo '[tools]' >> "$GITHUB_OUTPUT"
+        echo "$TF_BINARY = \"$TF_VERSION\"" >> "$GITHUB_OUTPUT"
+        echo "terragrunt = \"$TG_VERSION\"" >> "$GITHUB_OUTPUT"
+        echo 'EOF' >> "$GITHUB_OUTPUT"
+    - uses: jdx/mise-action@v2
+      with:
+          install: true
+          cache: true
+          mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
-    - name: Test Terraform and Terragrunt
+    - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
       run: |
-        terraform --version
+        terraform --version || true
+        tofu --version || true
         terragrunt --version
-
-    - name: Update PATH in bash profile
-      shell: bash
-      if: ${{ inputs.update_path_in_bash_profile }}
-      run: |
-        echo 'export PATH="$HOME/.tfenv/bin:$HOME/tgswitch:$PATH"' >> "$HOME/.bash_profile"
 
     - name: Download Pipelines CLI
       uses: dsaltares/fetch-gh-release-asset@1.1.1
@@ -138,6 +125,10 @@ runs:
         # CD Infra-live directory && Run Pipelines-execute
         cd ${{ inputs.infra_live_directory }}
 
+        if [ "${{ inputs.tf_binary }}" == "opentofu" ]
+        then
+          export TERRAGRUNT_TFPATH=tofu
+        fi
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \

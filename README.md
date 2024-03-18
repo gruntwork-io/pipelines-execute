@@ -40,8 +40,9 @@ jobs:
       uses: gruntwork-io/pipelines-execute@v0.0.1
       with:
         token: ${{ secrets.GW_GITHUB_TOKEN }}
-        tf_version: 1.0.11
+        tf_version: 1.6.1
         tg_version: 0.48.1
+        tf_binary: opentofu
         working_directory: ${{ inputs.working_directory }}
         terragrunt_command: "${{ inputs.terragrunt_command }}"
         pipelines_cli_version: v0.2.0
