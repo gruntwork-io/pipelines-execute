@@ -81,9 +81,9 @@ runs:
         echo 'EOF' >> "$GITHUB_OUTPUT"
     - uses: jdx/mise-action@v2
       with:
-          install: true
-          cache: true
-          mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
+        install: true
+        cache: true
+        mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
@@ -93,17 +93,14 @@ runs:
         terragrunt --version
 
     - name: Download Pipelines CLI
-      uses: dsaltares/fetch-gh-release-asset@1.1.1
-      with:
-        repo: "gruntwork-io/pipelines-cli"
-        version: "tags/${{ inputs.pipelines_cli_version }}"
-        file: "pipelines_linux_amd64"
-        target: "/tmp/pipelines"
-        token: ${{ inputs.token }}
-
-    - name: Install Pipelines CLI
       shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
       run: |
+        gh release download ${{ inputs.pipelines_cli_version }} \
+         -R gruntwork-io/pipelines-cli \
+         -p "pipelines_linux_amd64" \
+         -O /tmp/pipelines
         sudo mv /tmp/pipelines /usr/local/bin/pipelines
         sudo chmod +x /usr/local/bin/pipelines
 
