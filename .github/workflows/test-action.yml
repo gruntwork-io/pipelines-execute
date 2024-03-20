@@ -1,0 +1,53 @@
+name: Test Pipelines Execute
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+      - name: Test OpenTofu
+        env:
+          PIPELINES_TELEMETRY_OPT_OUT: true
+          DEPLOY_BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        uses: ./
+        with:
+          token: ${{ secrets.GW_GITHUB_TOKEN }}
+          tf_version: 1.6.1
+          tg_version: 0.54.0
+          tf_binary: opentofu
+          pipelines_cli_version: v0.5.8
+          working_directory: "example"
+          terragrunt_command: "plan"
+          infra_live_repo: "gruntwork-io/pipelines-execute"
+          infra_live_directory: "test/infrastructure-live"
+          infra_live_repo_branch: ${{ steps.extract_branch.outputs.branch }}
+          gruntwork_config: '{ "repo-allow-list": [ "gruntwork-io/pipelines-execute" ] }'
+      - name: Cleanup
+        run: rm test/infrastructure-live/example/.terraform.lock.hcl && rm -Rf test/infrastructure-live/example/.terragrunt-cache
+      - name: Test Terraform
+        env:
+          PIPELINES_TELEMETRY_OPT_OUT: true
+          DEPLOY_BRANCH_NAME: ${{ steps.extract_branch.outputs.branch }}
+        uses: ./
+        with:
+          token: ${{ secrets.GW_GITHUB_TOKEN }}
+          tf_version: 1.5.7
+          tg_version: 0.54.0
+          tf_binary: terraform
+          pipelines_cli_version: v0.5.8
+          working_directory: "example"
+          terragrunt_command: "plan"
+          infra_live_repo: "gruntwork-io/pipelines-execute"
+          infra_live_directory: "test/infrastructure-live"
+          infra_live_repo_branch: ${{ steps.extract_branch.outputs.branch }}
+          gruntwork_config: '{ "repo-allow-list": [ "gruntwork-io/pipelines-execute" ] }'
