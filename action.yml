@@ -49,7 +49,10 @@ inputs:
     required: true
   gruntwork_config:
     description: "Contents of the Gruntwork config file"
-    required: true
+    required: false
+  gruntwork_config_file:
+    description: "Absolute path to the Gruntwork config file"
+    required: false
   update_path_in_bash_profile:
     description: "Whether to update the PATH variable within the bash profile to utilize the installed Terraform and Terragrunt versions"
     required: false
@@ -129,6 +132,7 @@ runs:
         then
           export TERRAGRUNT_TFPATH=tofu
         fi
+
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
@@ -136,4 +140,5 @@ runs:
           --infra-live-repo ${{ inputs.infra_live_repo }} \
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }} \
-          --gruntwork-config "${{ inputs.gruntwork_config }}"
+          --gruntwork-config "${{ inputs.gruntwork_config }}" \
+          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}"

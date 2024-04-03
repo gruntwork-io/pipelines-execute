@@ -16,7 +16,8 @@ It is designed to be run in your `<company-name>/infrastructure-pipelines` repos
 - `infra_live_repo` (required): The name of the infrastructure-live repo to execute in.
 - `infra_live_directory` (required): The name of the directory containing the infrastructure-live repo on disk.
 - `infra_live_repo_branch` (required): The branch of the infrastructure-live repo to execute in.
-- `gruntwork_config` (required): Contents of the Gruntwork config file in the infrastructure-pipelines repo.
+- `gruntwork_config` (optional): Contents of the Gruntwork config file in the infrastructure-pipelines repo. NOTE: One of gruntwork_config or gruntwork_config_file MUST be passed in.
+- `gruntwork_config_file` (optional): Absolute path to the Gruntwork config file in the infrastructure-repo. NOTE: One of gruntwork_config or gruntwork_config_file MUST be passed in.
 
 ## Outputs
 
