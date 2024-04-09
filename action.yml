@@ -14,22 +14,28 @@ inputs:
   token:
     description: "The GitHub token for downloading the Gruntwork Pipelines binary and modules"
     required: true
-  # The following are required for the terragrunt action
+  # The following are required to generate a .mise.toml file
+  generate_mise_toml:
+    description: "Whether to generate a .mise.toml file for the action"
+    required: false
+    default: "false"
   tg_version:
-    description: "Terragrunt version to install."
-    required: true
+    description: "Terragrunt version to install. Ignored if generate_mise_toml is false."
+    required: false
     default: "0.48.1"
   tf_version:
-    description: "OpenTofu or Terraform version to install."
-    required: true
+    description: "OpenTofu or Terraform version to install. Ignored if generate_mise_toml is false."
+    required: false
     default: "1.6.1"
   tf_binary:
-    description: "Whether to use opentofu or terraform as the binary."
-    required: true
+    description: "Whether to use opentofu or terraform as the binary. Ignored if generate_mise_toml is false."
+    required: false
     default: "opentofu"
-    options:
-      - terraform
-      - opentofu
+    # These are the valid options, but not enforced by the action
+    # options:
+    #   - terraform
+    #   - opentofu
+  # The following are required to run the Pipelines CLI
   tg_execution_parallelism_limit:
     # https://terragrunt.gruntwork.io/docs/features/execute-terraform-commands-on-multiple-modules-at-once/#limiting-the-module-execution-parallelism
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
@@ -53,10 +59,6 @@ inputs:
   gruntwork_config_file:
     description: "Absolute path to the Gruntwork config file"
     required: false
-  update_path_in_bash_profile:
-    description: "Whether to update the PATH variable within the bash profile to utilize the installed Terraform and Terragrunt versions"
-    required: false
-    default: "false"
 
 runs:
   using: "composite"
@@ -69,7 +71,9 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
       with:
         detached: true
+
     - name: Setup Mise Toml
+      if: ${{ inputs.generate_mise_toml == 'true' }}
       id: mise-toml
       shell: bash
       env:
@@ -82,11 +86,19 @@ runs:
         echo "$TF_BINARY = \"$TF_VERSION\"" >> "$GITHUB_OUTPUT"
         echo "terragrunt = \"$TG_VERSION\"" >> "$GITHUB_OUTPUT"
         echo 'EOF' >> "$GITHUB_OUTPUT"
+
     - uses: jdx/mise-action@v2
+      if: ${{ inputs.generate_mise_toml == 'true' }}
       with:
           install: true
           cache: true
           mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
+
+    - uses: jdx/mise-action@v2
+      if: ${{ inputs.generate_mise_toml == 'false' }}
+      with:
+          install: true
+          cache: true
 
     - name: Test Terraform, OpenTofu and Terragrunt
       shell: bash
