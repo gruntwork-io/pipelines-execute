@@ -59,6 +59,10 @@ inputs:
   gruntwork_config_file:
     description: "Absolute path to the Gruntwork config file"
     required: false
+  deploy_branch_name:
+    description: ""
+    required: false
+
 
 runs:
   using: "composite"
@@ -151,6 +155,6 @@ runs:
           --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }} \
           --infra-live-repo ${{ inputs.infra_live_repo }} \
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
-          --deployment-branch ${{ env.DEPLOY_BRANCH_NAME }} \
+          --deployment-branch ${{ inputs.deploy_branch_name }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}" \
           --gruntwork-config-file "${{ inputs.gruntwork_config_file }}"
