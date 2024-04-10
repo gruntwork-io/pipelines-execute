@@ -28,7 +28,7 @@ inputs:
     required: false
     default: "1.6.1"
   tf_binary:
-    description: "Whether to use opentofu or terraform as the binary. Ignored if generate_mise_toml is false."
+    description: "Whether to use opentofu or terraform as the binary."
     required: false
     default: "opentofu"
     # These are the valid options, but not enforced by the action
