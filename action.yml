@@ -77,6 +77,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check for Minimum Supported Version of the Pipelines CLI
+      shell: bash
+      env:
+        PIPELINES_CLI_VERSION: ${{ inputs.pipelines_cli_version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: $ACTION_PATH/scripts/check-msv.sh
+
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Enable debugging via ssh
       uses: mxschmitt/action-tmate@v3
@@ -172,7 +179,7 @@ runs:
           --deployment-branch ${{ inputs.deploy_branch_name }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}" \
           --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" | tee /tmp/pipelines-execute-stdout
-          #--out-path=$PLAN_FOLDER # Commented out until pipelines binary supports passing through an old folder
+          --out-path=$PLAN_FOLDER
 
         EXECUTE_OUTPUT=$(cat /tmp/pipelines-execute-stdout)
 
@@ -182,15 +189,6 @@ runs:
     - name: Parse resulting plans
       id: parse-plan
       shell: bash
-      env:
-        MINIMUM_PIPELINES_VERSION_FOR_PARSE: 0.7.1
       run: |
-        function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' ' | tr 'v' ' '); }
-        if [ $(ver ${{ inputs.pipelines_cli_version }}) -ge $(ver $MINIMUM_PIPELINES_VERSION_FOR_PARSE) ];
-        then
-          OUTPUT=$(pipelines tfplan parse-to-comment --format=github --plan-folder ${{ steps.execute.outputs.plan_folder }})
-          echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
-        else
-          echo "Installed Pipelines CLI version needs to be at least $MINIMUM_PIPELINES_VERSION_FOR_PARSE to parse plans. Skipping..."
-          echo "formatted_plan_output=" >> $GITHUB_OUTPUT
-        fi
+        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --plan-folder ${{ steps.execute.outputs.plan_folder }})
+        echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
