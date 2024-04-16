@@ -73,7 +73,7 @@ outputs:
     value: ${{ steps.execute.outputs.plan_folder }}
   formatted_plan_output:
     description: "A string, formatted in GitHub Markdown, rendering human readable output of the plan"
-    value: ${{ steps.parse-plan.outputs.plan_folder }}
+    value: ${{ steps.parse-plan.outputs.formatted_plan_output }}
 runs:
   using: "composite"
   steps:
