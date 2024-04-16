@@ -71,7 +71,9 @@ outputs:
   plan_folder:
     description: "A folder with plan files (if any)"
     value: ${{ steps.execute.outputs.plan_folder }}
-
+  formatted_plan_output:
+    description: "A string, formatted in GitHub Markdown, rendering human readable output of the plan"
+    value: ${{ steps.parse-plan.outputs.plan_folder }}
 runs:
   using: "composite"
   steps:
@@ -176,3 +178,19 @@ runs:
 
         echo "execute_output=$EXECUTE_OUTPUT" >> $GITHUB_OUTPUT
         echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
+
+    - name: Parse resulting plans
+      id: parse-plan
+      shell: bash
+      env:
+        MINIMUM_PIPELINES_VERSION_FOR_PARSE: 0.7.1
+      run: |
+        function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' ' | tr 'v' ' '); }
+        if [ $(ver ${{ inputs.pipelines_cli_version }}) -lt $(ver $MINIMUM_PIPELINES_VERSION_FOR_PARSE) ];
+        then
+          OUTPUT=$(pipelines tfplan parse-to-comment --format=github --plan-folder ${{ steps.execute.outputs.plan_folder }})
+          echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
+        else
+          echo "Installed Pipelines CLI version needs to be at least $MINIMUM_PIPELINES_VERSION_FOR_PARSE to parse plans. Skipping..."
+          echo "formatted_plan_output=" >> $GITHUB_OUTPUT
+        fi
