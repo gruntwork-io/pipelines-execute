@@ -190,5 +190,12 @@ runs:
       id: parse-plan
       shell: bash
       run: |
+        if [ "${{ inputs.tf_binary }}" == "terraform" ]
+        then
+          export TERRAGRUNT_TFPATH=terraform
+        else
+          export TERRAGRUNT_TFPATH=tofu
+        fi
+
         OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
         echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
