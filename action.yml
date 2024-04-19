@@ -181,9 +181,9 @@ runs:
           --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" \
           --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
 
-        EXECUTE_OUTPUT=$(cat /tmp/pipelines-execute-stdout)
-
-        echo "execute_output=$EXECUTE_OUTPUT" >> $GITHUB_OUTPUT
+        echo "execute_output<<EOF" >> $GITHUB_OUTPUT
+        cat /tmp/pipelines-execute-stdout >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
         echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
 
     - name: Parse resulting plans
