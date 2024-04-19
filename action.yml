@@ -179,7 +179,7 @@ runs:
           --deployment-branch ${{ inputs.deploy_branch_name }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}" \
           --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" | tee /tmp/pipelines-execute-stdout
-          --out-path=$PLAN_FOLDER
+          --out-dir=$PLAN_FOLDER
 
         EXECUTE_OUTPUT=$(cat /tmp/pipelines-execute-stdout)
 
@@ -190,5 +190,5 @@ runs:
       id: parse-plan
       shell: bash
       run: |
-        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --plan-folder ${{ steps.execute.outputs.plan_folder }})
+        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
         echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
