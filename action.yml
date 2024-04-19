@@ -198,4 +198,7 @@ runs:
         fi
 
         OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
-        echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
+
+        echo "formatted_plan_output<<EOF" >> $GITHUB_OUTPUT
+        echo $OUTPUT >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
