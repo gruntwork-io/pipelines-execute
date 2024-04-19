@@ -178,8 +178,8 @@ runs:
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --deployment-branch ${{ inputs.deploy_branch_name }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}" \
-          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" | tee /tmp/pipelines-execute-stdout
-          --out-dir=$PLAN_FOLDER
+          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" \
+          --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
 
         EXECUTE_OUTPUT=$(cat /tmp/pipelines-execute-stdout)
 
