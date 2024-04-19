@@ -64,9 +64,26 @@ inputs:
     required: false
 
 
+outputs:
+  execute_stdout:
+    description: "The output of the Pipelines Execute command"
+    value: ${{ steps.execute.outputs.execute_output }}
+  plan_folder:
+    description: "A folder with plan files (if any)"
+    value: ${{ steps.execute.outputs.plan_folder }}
+  formatted_plan_output:
+    description: "A string, formatted in GitHub Markdown, rendering human readable output of the plan"
+    value: ${{ steps.parse-plan.outputs.formatted_plan_output }}
 runs:
   using: "composite"
   steps:
+    - name: Check for Minimum Supported Version of the Pipelines CLI
+      shell: bash
+      env:
+        PIPELINES_CLI_VERSION: ${{ inputs.pipelines_cli_version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: $ACTION_PATH/scripts/check-msv.sh
+
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Enable debugging via ssh
       uses: mxschmitt/action-tmate@v3
@@ -151,6 +168,8 @@ runs:
           export TERRAGRUNT_TFPATH=tofu
         fi
 
+        PLAN_FOLDER=$(mktemp -d)
+
         pipelines execute terragrunt \
           --working-directory ${{ inputs.working_directory }} \
           --command "${{ inputs.terragrunt_command }}" \
@@ -159,4 +178,17 @@ runs:
           --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
           --deployment-branch ${{ inputs.deploy_branch_name }} \
           --gruntwork-config "${{ inputs.gruntwork_config }}" \
-          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}"
+          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" \
+          --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
+
+        EXECUTE_OUTPUT=$(cat /tmp/pipelines-execute-stdout)
+
+        echo "execute_output=$EXECUTE_OUTPUT" >> $GITHUB_OUTPUT
+        echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
+
+    - name: Parse resulting plans
+      id: parse-plan
+      shell: bash
+      run: |
+        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
+        echo "formatted_plan_output=$OUTPUT" >> $GITHUB_OUTPUT
