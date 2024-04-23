@@ -200,7 +200,7 @@ runs:
         PLAN_FOLDER="$(mktemp -d)"
 
         pipelines execute terragrunt \
-          --working-directory "$WORKING_DIRECTORY" \
+          --working-directory "$INFRA_LIVE_REPO/$WORKING_DIRECTORY" \
           --command "$TERRAGRUNT_COMMAND" \
           --tg-parallelism-limit "$TG_PARALLELISM_LIMIT" \
           --infra-live-repo "$INFRA_LIVE_REPO" \
