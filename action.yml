@@ -98,15 +98,16 @@ runs:
       shell: bash
       env:
         GENERATE_MISE_TOML: ${{ inputs.generate_mise_toml }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
       run: |
         if [[ "$GENERATE_MISE_TOML" == "true" ]]; then
           echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
         else
-          echo "Confirming user has a `mise.toml` file already
-          if [ -f .mise.toml ]; then
+          echo 'Confirming user has a `.mise.toml` file already'
+          if [[ -f "$INFRA_LIVE_DIRECTORY/.mise.toml" ]]; then
             echo "generate_mise_toml=false" >> "$GITHUB_OUTPUT"
           else
-            echo "User does not have a `mise.toml` file, generating one to avoid failure"
+            echo 'User does not have a `.mise.toml` file, generating one to avoid failure'
             echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
           fi
         fi
@@ -175,11 +176,21 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
+        TF_BINARY: ${{ inputs.tf_binary }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        TERRAGRUNT_COMMAND: ${{ inputs.terragrunt_command }}
+        TG_PARALLELISM_LIMIT: ${{ inputs.tg_execution_parallelism_limit }}
+        INFRA_LIVE_REPO: ${{ inputs.infra_live_repo }}
+        INFRA_LIVE_REPO_BRANCH: ${{ inputs.infra_live_repo_branch }}
+        DEPLOY_BRANCH_NAME: ${{ inputs.deploy_branch_name }}
+        GRUNTWORK_CONFIG: ${{ inputs.gruntwork_config }}
+        GRUNTWORK_CONFIG_FILE: ${{ inputs.gruntwork_config_file }}
       run: |
         # CD Infra-live directory && Run Pipelines-execute
-        cd ${{ inputs.infra_live_directory }}
+        cd "$INFRA_LIVE_DIRECTORY"
 
-        if [ "${{ inputs.tf_binary }}" == "terraform" ]
+        if [ "$TF_BINARY" == "terraform" ]
         then
           export TERRAGRUNT_TFPATH=terraform
         else
@@ -189,14 +200,14 @@ runs:
         PLAN_FOLDER=$(mktemp -d)
 
         pipelines execute terragrunt \
-          --working-directory ${{ inputs.working_directory }} \
-          --command "${{ inputs.terragrunt_command }}" \
-          --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }} \
-          --infra-live-repo ${{ inputs.infra_live_repo }} \
-          --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
-          --deployment-branch ${{ inputs.deploy_branch_name }} \
-          --gruntwork-config "${{ inputs.gruntwork_config }}" \
-          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" \
+          --working-directory "$WORKING_DIRECTORY" \
+          --command "$TERRAGRUNT_COMMAND" \
+          --tg-parallelism-limit "$TG_PARALLELISM_LIMIT" \
+          --infra-live-repo "$INFRA_LIVE_REPO" \
+          --infra-live-repo-branch "$INFRA_LIVE_REPO_BRANCH" \
+          --deployment-branch "$DEPLOY_BRANCH_NAME" \
+          --gruntwork-config "$GRUNTWORK_CONFIG" \
+          --gruntwork-config-file "$GRUNTWORK_CONFIG_FILE" \
           --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
 
         echo "execute_output<<EOF" >> $GITHUB_OUTPUT
@@ -207,15 +218,19 @@ runs:
     - name: Parse resulting plans
       id: parse-plan
       shell: bash
+      env:
+        TF_BINARY: ${{ inputs.tf_binary }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        PLAN_FOLDER: ${{ steps.execute.outputs.plan_folder }}
       run: |
-        if [ "${{ inputs.tf_binary }}" == "terraform" ]
+        if [ "$TF_BINARY" == "terraform" ]
         then
           export TERRAGRUNT_TFPATH=terraform
         else
           export TERRAGRUNT_TFPATH=tofu
         fi
 
-        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
+        OUTPUT="$(pipelines tfplan parse-to-comment --format=github --working-directory "$WORKING_DIRECTORY" "$PLAN_FOLDER")"
 
         echo "formatted_plan_output<<EOF" >> $GITHUB_OUTPUT
         echo $OUTPUT >> $GITHUB_OUTPUT
