@@ -224,6 +224,7 @@ runs:
         TF_BINARY: ${{ inputs.tf_binary }}
         WORKING_DIRECTORY: ${{ inputs.working_directory }}
         PLAN_FOLDER: ${{ steps.execute.outputs.plan_folder }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
       run: |
         if [ "$TF_BINARY" == "terraform" ]
         then
@@ -231,6 +232,8 @@ runs:
         else
           export TERRAGRUNT_TFPATH=tofu
         fi
+
+        cd "$INFRA_LIVE_DIRECTORY"
 
         OUTPUT="$(pipelines tfplan parse-to-comment --format=github --working-directory "$WORKING_DIRECTORY" "$PLAN_FOLDER")"
 
