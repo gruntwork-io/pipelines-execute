@@ -16,15 +16,15 @@ inputs:
     required: true
   # The following are required to generate a .mise.toml file
   generate_mise_toml:
-    description: "Whether to generate a .mise.toml file for the action"
+    description: "Explicitly force generation of a .mise.toml file for the action"
     required: false
     default: "false"
   tg_version:
-    description: "Terragrunt version to install. Ignored if generate_mise_toml is false."
+    description: "Terragrunt version to install. Ignored if generate_mise_toml is false and user has a .mise.toml."
     required: false
     default: "0.48.1"
   tf_version:
-    description: "OpenTofu or Terraform version to install. Ignored if generate_mise_toml is false."
+    description: "OpenTofu or Terraform version to install. Ignored if generate_mise_toml is false and user has a .mise.toml."
     required: false
     default: "1.6.1"
   tf_binary:
@@ -93,8 +93,26 @@ runs:
       with:
         detached: true
 
+    - name: Determine dynamic .mise.toml generation
+      id: determine_mise_toml
+      shell: bash
+      env:
+        GENERATE_MISE_TOML: ${{ inputs.generate_mise_toml }}
+      run: |
+        if [[ "$GENERATE_MISE_TOML" == "true" ]]; then
+          echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Confirming user has a `mise.toml` file already
+          if [ -f .mise.toml ]; then
+            echo "generate_mise_toml=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "User does not have a `mise.toml` file, generating one to avoid failure"
+            echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
+          fi
+        fi
+
     - name: Setup Mise Toml
-      if: ${{ inputs.generate_mise_toml == 'true' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'true' }}
       id: mise-toml
       shell: bash
       env:
@@ -109,14 +127,14 @@ runs:
         echo 'EOF' >> "$GITHUB_OUTPUT"
 
     - uses: jdx/mise-action@v2
-      if: ${{ inputs.generate_mise_toml == 'true' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'true' }}
       with:
           install: true
           cache: true
           mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
     - uses: jdx/mise-action@v2
-      if: ${{ inputs.generate_mise_toml == 'false' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'false' }}
       with:
           install: true
           cache: true
