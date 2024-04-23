@@ -92,7 +92,6 @@ runs:
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_ssh_enabled }}
       with:
         detached: true
-        limit-access-to-actor: false
 
     - name: Determine dynamic .mise.toml generation
       id: determine_mise_toml
