@@ -213,6 +213,7 @@ runs:
 
         echo "execute_output<<EOF" >> $GITHUB_OUTPUT
         cat /tmp/pipelines-execute-stdout >> $GITHUB_OUTPUT
+        echo >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
 
