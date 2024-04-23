@@ -198,10 +198,10 @@ runs:
           export TERRAGRUNT_TFPATH=tofu
         fi
 
-        PLAN_FOLDER=$(mktemp -d)
+        PLAN_FOLDER="$(mktemp -d)"
 
         pipelines execute terragrunt \
-          --working-directory "$INFRA_LIVE_REPO/$WORKING_DIRECTORY" \
+          --working-directory "$WORKING_DIRECTORY" \
           --command "$TERRAGRUNT_COMMAND" \
           --tg-parallelism-limit "$TG_PARALLELISM_LIMIT" \
           --infra-live-repo "$INFRA_LIVE_REPO" \
@@ -209,7 +209,7 @@ runs:
           --deployment-branch "$DEPLOY_BRANCH_NAME" \
           --gruntwork-config "$GRUNTWORK_CONFIG" \
           --gruntwork-config-file "$GRUNTWORK_CONFIG_FILE" \
-          --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
+          --out-dir="$PLAN_FOLDER" | tee /tmp/pipelines-execute-stdout
 
         echo "execute_output<<EOF" >> $GITHUB_OUTPUT
         cat /tmp/pipelines-execute-stdout >> $GITHUB_OUTPUT
