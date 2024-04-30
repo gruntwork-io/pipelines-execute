@@ -67,7 +67,7 @@ inputs:
 outputs:
   execute_stdout:
     description: "The output of the Pipelines Execute command"
-    value: ${{ steps.execute.outputs.execute_output }}
+    value: ${{ steps.execute.outputs.execute_stdout }}
   plan_folder:
     description: "A folder with plan files (if any)"
     value: ${{ steps.execute.outputs.plan_folder }}
@@ -210,8 +210,8 @@ runs:
           --gruntwork-config-file "$GRUNTWORK_CONFIG_FILE" \
           --out-dir="$PLAN_FOLDER" | tee /tmp/pipelines-execute-stdout
 
-        echo "execute_output<<EOF" >> $GITHUB_OUTPUT
-        cat /tmp/pipelines-execute-stdout >> $GITHUB_OUTPUT
+        echo "execute_stdout<<EOF" >> $GITHUB_OUTPUT
+        cat /tmp/pipelines-execute-stdout | sed -e "s/\x1b\[.\{1,5\}m//g" >> $GITHUB_OUTPUT
         echo >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
