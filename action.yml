@@ -16,15 +16,15 @@ inputs:
     required: true
   # The following are required to generate a .mise.toml file
   generate_mise_toml:
-    description: "Whether to generate a .mise.toml file for the action"
+    description: "Explicitly force generation of a .mise.toml file for the action"
     required: false
     default: "false"
   tg_version:
-    description: "Terragrunt version to install. Ignored if generate_mise_toml is false."
+    description: "Terragrunt version to install. Ignored if generate_mise_toml is false and user has a .mise.toml."
     required: false
     default: "0.48.1"
   tf_version:
-    description: "OpenTofu or Terraform version to install. Ignored if generate_mise_toml is false."
+    description: "OpenTofu or Terraform version to install. Ignored if generate_mise_toml is false and user has a .mise.toml."
     required: false
     default: "1.6.1"
   tf_binary:
@@ -93,8 +93,27 @@ runs:
       with:
         detached: true
 
+    - name: Determine dynamic .mise.toml generation
+      id: determine_mise_toml
+      shell: bash
+      env:
+        GENERATE_MISE_TOML: ${{ inputs.generate_mise_toml }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
+      run: |
+        if [[ "$GENERATE_MISE_TOML" == "true" ]]; then
+          echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
+        else
+          echo 'Confirming user has a `.mise.toml` file already'
+          if [[ -f "$INFRA_LIVE_DIRECTORY/.mise.toml" ]]; then
+            echo "generate_mise_toml=false" >> "$GITHUB_OUTPUT"
+          else
+            echo 'User does not have a `.mise.toml` file, generating one to avoid failure'
+            echo "generate_mise_toml=true" >> "$GITHUB_OUTPUT"
+          fi
+        fi
+
     - name: Setup Mise Toml
-      if: ${{ inputs.generate_mise_toml == 'true' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'true' }}
       id: mise-toml
       shell: bash
       env:
@@ -109,14 +128,14 @@ runs:
         echo 'EOF' >> "$GITHUB_OUTPUT"
 
     - uses: jdx/mise-action@v2
-      if: ${{ inputs.generate_mise_toml == 'true' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'true' }}
       with:
           install: true
           cache: true
           mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
     - uses: jdx/mise-action@v2
-      if: ${{ inputs.generate_mise_toml == 'false' }}
+      if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'false' }}
       with:
           install: true
           cache: true
@@ -129,7 +148,7 @@ runs:
         terragrunt --version
 
     - name: Download Pipelines CLI
-      uses: dsaltares/fetch-gh-release-asset@1.1.1
+      uses: dsaltares/fetch-gh-release-asset@1.1.2
       with:
         repo: "gruntwork-io/pipelines-cli"
         version: "tags/${{ inputs.pipelines_cli_version }}"
@@ -157,47 +176,65 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         MACHINE_USER_NAME: ${{ steps.load_machine_user.outputs.MACHINE_USER_NAME }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
+        TF_BINARY: ${{ inputs.tf_binary }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        TERRAGRUNT_COMMAND: ${{ inputs.terragrunt_command }}
+        TG_PARALLELISM_LIMIT: ${{ inputs.tg_execution_parallelism_limit }}
+        INFRA_LIVE_REPO: ${{ inputs.infra_live_repo }}
+        INFRA_LIVE_REPO_BRANCH: ${{ inputs.infra_live_repo_branch }}
+        DEPLOY_BRANCH_NAME: ${{ inputs.deploy_branch_name }}
+        GRUNTWORK_CONFIG: ${{ inputs.gruntwork_config }}
+        GRUNTWORK_CONFIG_FILE: ${{ inputs.gruntwork_config_file }}
       run: |
         # CD Infra-live directory && Run Pipelines-execute
-        cd ${{ inputs.infra_live_directory }}
+        cd "$INFRA_LIVE_DIRECTORY"
 
-        if [ "${{ inputs.tf_binary }}" == "terraform" ]
+        if [ "$TF_BINARY" == "terraform" ]
         then
           export TERRAGRUNT_TFPATH=terraform
         else
           export TERRAGRUNT_TFPATH=tofu
         fi
 
-        PLAN_FOLDER=$(mktemp -d)
+        PLAN_FOLDER="$(mktemp -d)"
 
         pipelines execute terragrunt \
-          --working-directory ${{ inputs.working_directory }} \
-          --command "${{ inputs.terragrunt_command }}" \
-          --tg-parallelism-limit ${{ inputs.tg_execution_parallelism_limit }} \
-          --infra-live-repo ${{ inputs.infra_live_repo }} \
-          --infra-live-repo-branch ${{ inputs.infra_live_repo_branch }} \
-          --deployment-branch ${{ inputs.deploy_branch_name }} \
-          --gruntwork-config "${{ inputs.gruntwork_config }}" \
-          --gruntwork-config-file "${{ inputs.gruntwork_config_file }}" \
-          --out-dir=$PLAN_FOLDER | tee /tmp/pipelines-execute-stdout
+          --working-directory "$WORKING_DIRECTORY" \
+          --command "$TERRAGRUNT_COMMAND" \
+          --tg-parallelism-limit "$TG_PARALLELISM_LIMIT" \
+          --infra-live-repo "$INFRA_LIVE_REPO" \
+          --infra-live-repo-branch "$INFRA_LIVE_REPO_BRANCH" \
+          --deployment-branch "$DEPLOY_BRANCH_NAME" \
+          --gruntwork-config "$GRUNTWORK_CONFIG" \
+          --gruntwork-config-file "$GRUNTWORK_CONFIG_FILE" \
+          --out-dir="$PLAN_FOLDER" | tee /tmp/pipelines-execute-stdout
 
         echo "execute_stdout<<EOF" >> $GITHUB_OUTPUT
         cat /tmp/pipelines-execute-stdout | sed -e "s/\x1b\[.\{1,5\}m//g" >> $GITHUB_OUTPUT
+        echo >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         echo "plan_folder=$PLAN_FOLDER" >> $GITHUB_OUTPUT
 
     - name: Parse resulting plans
       id: parse-plan
       shell: bash
+      env:
+        TF_BINARY: ${{ inputs.tf_binary }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        PLAN_FOLDER: ${{ steps.execute.outputs.plan_folder }}
+        INFRA_LIVE_DIRECTORY: ${{ inputs.infra_live_directory }}
       run: |
-        if [ "${{ inputs.tf_binary }}" == "terraform" ]
+        if [ "$TF_BINARY" == "terraform" ]
         then
           export TERRAGRUNT_TFPATH=terraform
         else
           export TERRAGRUNT_TFPATH=tofu
         fi
 
-        OUTPUT=$(pipelines tfplan parse-to-comment --format=github --working-directory ${{ inputs.working_directory }} ${{ steps.execute.outputs.plan_folder }})
+        cd "$INFRA_LIVE_DIRECTORY"
+
+        OUTPUT="$(pipelines tfplan parse-to-comment --format=github --working-directory "$WORKING_DIRECTORY" "$PLAN_FOLDER")"
 
         echo "formatted_plan_output<<EOF" >> $GITHUB_OUTPUT
         echo $OUTPUT >> $GITHUB_OUTPUT
