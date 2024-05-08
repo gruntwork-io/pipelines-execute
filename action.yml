@@ -41,9 +41,6 @@ inputs:
     description: "Maximum number of concurrently executed Terraform modules during Terragrunt execution"
     required: false
     default: "0" # Ignored by pipelines-execute
-  pipelines_cli_version:
-    description: "The version of the Gruntwork Pipelines CLI to use"
-    required: true
   infra_live_repo:
     description: "The name of the infrastructure-live repo to execute in"
     required: true
@@ -80,7 +77,6 @@ runs:
     - name: Check for Minimum Supported Version of the Pipelines CLI
       shell: bash
       env:
-        PIPELINES_CLI_VERSION: ${{ inputs.pipelines_cli_version }}
         ACTION_PATH: ${{ github.action_path }}
       run: $ACTION_PATH/scripts/check-msv.sh
 
@@ -151,7 +147,7 @@ runs:
       uses: dsaltares/fetch-gh-release-asset@1.1.2
       with:
         repo: "gruntwork-io/pipelines-cli"
-        version: "tags/${{ inputs.pipelines_cli_version }}"
+        version: "tags/${{ env.PIPELINES_CLI_VERSION }}"
         file: "pipelines_linux_amd64"
         target: "/tmp/pipelines"
         token: ${{ inputs.token }}
