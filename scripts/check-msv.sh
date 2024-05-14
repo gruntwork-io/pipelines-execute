@@ -16,16 +16,16 @@ MINIMUM_MINOR_VERSION=$(cut -d. -f2 <<<"$MINIMUM_CLI_VERSION")
 MINIMUM_PATCH_VERSION=$(cut -d. -f3 <<<"$MINIMUM_CLI_VERSION")
 
 if [[ "$MAJOR_VERSION" -lt "$MINIMUM_MAJOR_VERSION" ]]; then
-    echo "::error pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
+    echo "::error::pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
     exit 1
 fi
 
 if [[ "$MINOR_VERSION" -lt "$MINIMUM_MINOR_VERSION" ]]; then
-    echo "::error pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
+    echo "::error::pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
     exit 1
 fi
 
 if [[ "$PATCH_VERSION" -lt "$MINIMUM_PATCH_VERSION" ]]; then
-    echo "::error pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
+    echo "::error::pipelines CLI version $PIPELINES_CLI_VERSION is less than the minimum required version $MINIMUM_CLI_VERSION"
     exit 1
 fi
