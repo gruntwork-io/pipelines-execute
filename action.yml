@@ -74,6 +74,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check Pipelines Version Env Var is correctly set
+      shell: bash
+      run: |
+        if [[ -z "$PIPELINES_CLI_VERSION" ]]; then
+          echo "::error Missing required environment variable PIPELINES_CLI_VERSION"
+          exit 1
+        fi
     - name: Check for Minimum Supported Version of the Pipelines CLI
       shell: bash
       env:
