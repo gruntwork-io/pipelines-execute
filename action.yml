@@ -130,14 +130,14 @@ runs:
         echo "terragrunt = \"$TG_VERSION\"" >> "$GITHUB_OUTPUT"
         echo 'EOF' >> "$GITHUB_OUTPUT"
 
-    - uses: jdx/mise-action@v2
+    - uses: jdx/mise-action@v4
       if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'true' }}
       with:
           install: true
           cache: true
           mise_toml: "${{ steps.mise-toml.outputs.TOML }}"
 
-    - uses: jdx/mise-action@v2
+    - uses: jdx/mise-action@v4
       if: ${{ steps.determine_mise_toml.outputs.generate_mise_toml == 'false' }}
       with:
           install: true
